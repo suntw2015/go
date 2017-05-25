@@ -12,21 +12,70 @@ import (
 )
 
 type movie struct {
-	name        string
-	coverImg    string
-	url         string
-	year        string
-	coutry      string
-	category    string
-	language    string
-	subtitle    string
-	displayDate string
-	format      string
-	mesure      string
-	time        int
-	director    string
-	actor       string
-	desc        string
+	name      string
+	othername string
+	coverImg  string
+	url       string
+	year      string
+	country   string
+	category  string
+	language  string
+	subtitle  string
+	showDate  string
+	fileType  string
+	mesure    string
+	duration  string
+	director  string
+	actor     string
+	desc      string
+}
+
+func (m *movie) setKeyValue(key string, value string) {
+	switch key {
+	case "name":
+		m.name = value
+	case "othername":
+		m.othername = value
+	case "year":
+		m.year = value
+	case "country":
+		m.country = value
+	case "category":
+		m.category = value
+	case "language":
+		m.language = value
+	case "showDate":
+		m.showDate = value
+	case "fileType":
+		m.fileType = value
+	case "mesure":
+		m.mesure = value
+	case "duration":
+		m.duration = value
+	case "director":
+		m.director += value
+	case "actor":
+		m.actor += value
+	case "desc":
+		m.desc += value
+	default:
+	}
+}
+
+func (m *movie) printMovie() {
+	fmt.Printf("%s:%s\n", "name", m.name)
+	fmt.Printf("%s:%s\n", "othername", m.othername)
+	fmt.Printf("%s:%s\n", "year", m.year)
+	fmt.Printf("%s:%s\n", "country", m.country)
+	fmt.Printf("%s:%s\n", "category", m.category)
+	fmt.Printf("%s:%s\n", "language", m.language)
+	fmt.Printf("%s:%s\n", "showDate", m.showDate)
+	fmt.Printf("%s:%s\n", "fileType", m.fileType)
+	fmt.Printf("%s:%s\n", "mesure", m.mesure)
+	fmt.Printf("%s:%s\n", "duration", m.duration)
+	fmt.Printf("%s:%s\n", "director", m.director)
+	fmt.Printf("%s:%s\n", "actor", m.actor)
+	fmt.Printf("%s:%s\n", "desc", m.desc)
 }
 
 func f(n *html.Node) {
@@ -65,7 +114,7 @@ func parseHtml(n *html.Node) []string {
 }
 
 func main() {
-	rootUrl := "http://www.dytt8.net//html/gndy/dyzz/20170519/54026.html"
+	rootUrl := "http://www.dytt8.net/html/gndy/dyzz/20170514/53986.html"
 
 	error, body := getHtmlContent(rootUrl)
 	if error != nil {
@@ -105,12 +154,48 @@ func checkUrl(s string) string {
 
 func parseDetailHtml(html []byte) {
 
-	re := regexp.MustCompile("(<br\\s/>)(\u25CE)?[\\p{Han}\u3000a-zA-Z0-9\\s\\/+_x&;\uff0c\u3002\uff08\uff09]+")
+	re := regexp.MustCompile("(<br\\s/>)(\u25CE)?[\\p{Han}\u3000a-zA-Z0-9\\s\\/+_x()&;\uff0c\u3002\uff08\uff09\uff1a\uff01]+")
 	s := re.FindAll(html, -1)
 
-	for _, tmp := range s {
-
+	var fieldStart = "\u25CE"
+	var movieMapKey = map[string]string{
+		"name":      "\u25CE\u7247[\u3000\\s]*\u540d",
+		"othername": "\u25CE\u8BD1[\u3000\\s]*\u540D",
+		"year":      "\u25CE\u5e74[\u3000\\s]*\u4ee3",
+		"country":   "\u25CE(\u56fd|\u4ea7)[\u3000\\s]*(\u5730|\u5bb6)",
+		"category":  "\u25CE\u7c7b[\u3000\\s]*\u522b",
+		"language":  "\u25CE\u8bed[\u3000\\s]*\u8a00",
+		"showDate":  "\u25CE\u4e0a\u6620\u65e5\u671f",
+		"fileType":  "\u25CE\u6587\u4EF6\u683C\u5F0F",
+		"mesure":    "\u25CE\u89C6\u9891\u5C3A\u5BF8",
+		"duration":  "\u25CE\u7247[\u3000\\s]*\u957F",
+		"director":  "\u25CE\u5BFC[\u3000\\s]*\u6F14",
+		"actor":     "\u25CE\u4E3B[\u3000\\s]*\u6F14",
+		"desc":      "\u25CE\u7B80[\u3000\\s]*\u4ECB",
 	}
 
-	// fmt.Println(s)
+	var m movie
+	var lastMapKey string
+
+	re = regexp.MustCompile("(<br\\s/>)")
+	fieldStartRe := regexp.MustCompile(fieldStart)
+	for _, text := range s {
+		tmp := re.ReplaceAll(text, []byte(""))
+		if fieldStartRe.Match(tmp) {
+			lastMapKey = ""
+			for key, value := range movieMapKey {
+				tmpRe := regexp.MustCompile(value)
+				if tmpRe.Match(tmp) {
+					lastMapKey = key
+					tmp = tmpRe.ReplaceAll(tmp, []byte(""))
+					m.setKeyValue(key, string(tmp))
+					break
+				}
+			}
+		} else {
+			m.setKeyValue(lastMapKey, string(tmp))
+		}
+	}
+
+	m.printMovie()
 }
